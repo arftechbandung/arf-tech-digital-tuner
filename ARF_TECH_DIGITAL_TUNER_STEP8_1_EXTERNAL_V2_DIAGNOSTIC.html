@@ -1,0 +1,149 @@
+<!doctype html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>ARF TECH DIGITAL TUNER V2</title>
+<style>
+body{margin:0;background:#101114;color:#fff;font-family:Arial,sans-serif}
+.wrap{max-width:620px;margin:auto;padding:16px}
+h1{text-align:center;font-size:24px;margin:8px 0 16px}
+.card{background:#1d1f24;border-radius:16px;padding:16px;margin:12px 0}
+.row{display:flex;justify-content:space-between;gap:12px;border-bottom:1px solid #34363d;padding:8px 0}
+.ok{color:#35e77d} .bad{color:#ff6565} .warn{color:#ffd34d}
+select,button{box-sizing:border-box;width:100%;padding:13px;border:0;border-radius:10px;margin-top:8px;font-size:16px}
+.note{font-size:58px;text-align:center;font-weight:bold;margin:8px}
+.target{font-size:30px;text-align:center}
+.freq,.cents,.status{text-align:center;margin:8px}
+.status{font-size:24px;font-weight:bold}
+.meter{height:18px;background:#3a3c43;border-radius:10px;position:relative;margin:22px 0}
+.mid{position:absolute;left:50%;top:-7px;height:32px;width:3px;background:#fff}
+.needle{position:absolute;left:50%;top:-4px;width:8px;height:26px;border-radius:4px;background:#ff5555;transform:translateX(-50%)}
+.small{opacity:.72;font-size:13px;text-align:center}
+</style>
+</head>
+<body>
+<div class="wrap">
+<h1>🎛 ARF TECH DIGITAL TUNER</h1>
+
+<div class="card">
+<div class="row"><span>HTTPS / Secure Context</span><b id="secure">CHECK...</b></div>
+<div class="row"><span>MediaDevices API</span><b id="media">CHECK...</b></div>
+<div class="row"><span>getUserMedia()</span><b id="gum">CHECK...</b></div>
+<div class="row"><span>Microphone Permission</span><b id="perm">CHECK...</b></div>
+<div class="row"><span>Browser</span><b id="browser">CHECK...</b></div>
+</div>
+
+<div class="card">
+<label>TARGET NOTASI</label>
+<select id="target"></select>
+<div class="target" id="targetText">A#3</div>
+<button id="start">🎙 START MIC</button>
+<button id="stop" disabled>⏹ STOP MIC</button>
+</div>
+
+<div class="card">
+<div class="small">NOTASI TERDETEKSI</div>
+<div class="note" id="note">--</div>
+<div class="freq" id="hz">-- Hz</div>
+<div class="cents" id="cents">-- cents</div>
+<div class="meter"><div class="mid"></div><div class="needle" id="needle"></div></div>
+<div class="status" id="status">MIC OFF</div>
+</div>
+
+<div class="card">
+<div><b>DETAIL ERROR</b></div>
+<pre id="error" style="white-space:pre-wrap;word-break:break-word"></pre>
+</div>
+
+<div class="small">Target C2–B7 • TUNING OK jika ≤ ±5 cents</div>
+</div>
+
+<script>
+const NOTES=[{"name":"C2","freq":65.4063913252},{"name":"C#2","freq":69.2956577444},{"name":"D2","freq":73.416191976},{"name":"D#2","freq":77.781745928},{"name":"E2","freq":82.406889228},{"name":"F2","freq":87.307057856},{"name":"F#2","freq":92.498605676},{"name":"G2","freq":97.998858992},{"name":"G#2","freq":103.826174396},{"name":"A2","freq":110.0},{"name":"A#2","freq":116.540940376},{"name":"B2","freq":123.470825316},{"name":"C3","freq":130.8127826504},{"name":"C#3","freq":138.5913154888},{"name":"D3","freq":146.832383952},{"name":"D#3","freq":155.563491856},{"name":"E3","freq":164.813778456},{"name":"F3","freq":174.614115712},{"name":"F#3","freq":184.997211352},{"name":"G3","freq":195.997717984},{"name":"G#3","freq":207.652348792},{"name":"A3","freq":220.0},{"name":"A#3","freq":233.081880752},{"name":"B3","freq":246.941650632},{"name":"C4","freq":261.6255653008},{"name":"C#4","freq":277.1826309776},{"name":"D4","freq":293.664767904},{"name":"D#4","freq":311.126983712},{"name":"E4","freq":329.627556912},{"name":"F4","freq":349.228231424},{"name":"F#4","freq":369.994422704},{"name":"G4","freq":391.995435968},{"name":"G#4","freq":415.304697584},{"name":"A4","freq":440.0},{"name":"A#4","freq":466.163761504},{"name":"B4","freq":493.883301264},{"name":"C5","freq":523.2511306016},{"name":"C#5","freq":554.3652619552},{"name":"D5","freq":587.329535808},{"name":"D#5","freq":622.253967424},{"name":"E5","freq":659.255113824},{"name":"F5","freq":698.456462848},{"name":"F#5","freq":739.988845408},{"name":"G5","freq":783.990871936},{"name":"G#5","freq":830.609395168},{"name":"A5","freq":880.0},{"name":"A#5","freq":932.327523008},{"name":"B5","freq":987.766602528},{"name":"C6","freq":1046.5022612032},{"name":"C#6","freq":1108.7305239104},{"name":"D6","freq":1174.659071616},{"name":"D#6","freq":1244.507934848},{"name":"E6","freq":1318.510227648},{"name":"F6","freq":1396.912925696},{"name":"F#6","freq":1479.977690816},{"name":"G6","freq":1567.981743872},{"name":"G#6","freq":1661.218790336},{"name":"A6","freq":1760.0},{"name":"A#6","freq":1864.655046016},{"name":"B6","freq":1975.533205056},{"name":"C7","freq":2093.0045224064},{"name":"C#7","freq":2217.4610478208},{"name":"D7","freq":2349.318143232},{"name":"D#7","freq":2489.015869696},{"name":"E7","freq":2637.020455296},{"name":"F7","freq":2793.825851392},{"name":"F#7","freq":2959.955381632},{"name":"G7","freq":3135.963487744},{"name":"G#7","freq":3322.437580672},{"name":"A7","freq":3520.0},{"name":"A#7","freq":3729.310092032},{"name":"B7","freq":3951.066410112}];
+const targetSel=document.getElementById('target');
+const targetText=document.getElementById('targetText');
+NOTES.forEach((n,i)=>{const o=document.createElement('option');o.value=i;o.textContent=n.name;targetSel.appendChild(o);});
+targetSel.value=23;
+function target(){return NOTES[Number(targetSel.value)];}
+targetSel.onchange=()=>targetText.textContent=target().name;
+
+function setState(id,text,good=null){
+ const e=document.getElementById(id);e.textContent=text;
+ e.className=good===true?'ok':good===false?'bad':good===null?'warn':'';
+}
+function browserInfo(){
+ const ua=navigator.userAgent;
+ let n='Unknown';
+ if(/Android/i.test(ua))n='Android / '+(ua.match(/Chrome\/([0-9.]+)/i)||['','Chrome'])[1];
+ else if(/iPhone|iPad/i.test(ua))n='iOS Safari';
+ else if(/Chrome/i.test(ua))n='Desktop Chrome';
+ document.getElementById('browser').textContent=n;
+}
+async function diagnostic(){
+ setState('secure',window.isSecureContext?'YES':'NO',window.isSecureContext);
+ setState('media',navigator.mediaDevices?'AVAILABLE':'NOT AVAILABLE',!!navigator.mediaDevices);
+ setState('gum',navigator.mediaDevices&&navigator.mediaDevices.getUserMedia?'AVAILABLE':'NOT AVAILABLE',
+          !!(navigator.mediaDevices&&navigator.mediaDevices.getUserMedia));
+ browserInfo();
+ if(navigator.permissions&&navigator.permissions.query){
+   try{
+     const p=await navigator.permissions.query({name:'microphone'});
+     setState('perm',p.state.toUpperCase(),p.state==='granted');
+     p.onchange=()=>setState('perm',p.state.toUpperCase(),p.state==='granted');
+   }catch(e){setState('perm','UNKNOWN',null);}
+ }else setState('perm','UNKNOWN',null);
+}
+let ctx,analyser,stream,buf,raf;
+function autoCorrelate(b,sr){
+ let rms=0;for(let i=0;i<b.length;i++)rms+=b[i]*b[i];
+ rms=Math.sqrt(rms/b.length);if(rms<0.008)return -1;
+ let best=0,bc=0;
+ for(let lag=20;lag<Math.min(2000,b.length/2);lag++){
+  let c=0;for(let i=0;i<b.length-lag;i++)c+=b[i]*b[i+lag];c/=b.length-lag;
+  if(c>bc){bc=c;best=lag;}
+ }
+ return best?sr/best:-1;
+}
+function closest(hz){
+ let b=NOTES[0],d=1e99;
+ for(const n of NOTES){const x=Math.abs(1200*Math.log2(hz/n.freq));if(x<d){d=x;b=n;}}
+ return b;
+}
+async function startMic(){
+ document.getElementById('error').textContent='';
+ if(!window.isSecureContext){setState('secure','NO',false);document.getElementById('error').textContent='Halaman ini bukan Secure Context. Buka URL HTTPS secara langsung, bukan HTTP/iframe.';return;}
+ if(!navigator.mediaDevices||!navigator.mediaDevices.getUserMedia){document.getElementById('error').textContent='getUserMedia tidak tersedia pada browser/origin ini.';return;}
+ try{
+  stream=await navigator.mediaDevices.getUserMedia({audio:{echoCancellation:false,noiseSuppression:false,autoGainControl:false}});
+  setState('perm','GRANTED',true);
+  ctx=new(window.AudioContext||window.webkitAudioContext)();
+  await ctx.resume();
+  const src=ctx.createMediaStreamSource(stream);
+  analyser=ctx.createAnalyser();analyser.fftSize=4096;src.connect(analyser);
+  buf=new Float32Array(analyser.fftSize);
+  start.disabled=true;stop.disabled=false;status.textContent='LISTENING...';status.className='ok';
+  loop();
+ }catch(e){
+  setState('perm','DENIED / ERROR',false);
+  document.getElementById('error').textContent='name: '+e.name+'\nmessage: '+e.message+'\nsecureContext: '+window.isSecureContext+'\norigin: '+location.origin;
+ }
+}
+function loop(){
+ analyser.getFloatTimeDomainData(buf);const hzv=autoCorrelate(buf,ctx.sampleRate);
+ if(hzv>0){
+  const n=closest(hzv),t=target(),diff=1200*Math.log2(hzv/t.freq),ok=Math.abs(diff)<=5;
+  note.textContent=n.name;hz.textContent=hzv.toFixed(2)+' Hz';cents.textContent=(diff>=0?'+':'')+diff.toFixed(1)+' cents';
+  status.textContent=ok?'✓ TUNING OK':(diff<0?'FLAT':'SHARP');status.className=ok?'ok':'warn';
+  needle.style.left=(50+Math.max(-50,Math.min(50,diff))/2)+'%';
+ }else{note.textContent='--';hz.textContent='-- Hz';cents.textContent='-- cents';status.textContent='NO SIGNAL';status.className='warn';needle.style.left='50%';}
+ raf=requestAnimationFrame(loop);
+}
+function stopMic(){
+ if(raf)cancelAnimationFrame(raf);if(stream)stream.getTracks().forEach(t=>t.stop());if(ctx)ctx.close();
+ start.disabled=false;stop.disabled=true;status.textContent='MIC OFF';status.className='';
+}
+const note=document.getElementById('note'),hz=document.getElementById('hz'),cents=document.getElementById('cents'),status=document.getElementById('status'),needle=document.getElementById('needle'),start=document.getElementById('start'),stop=document.getElementById('stop');
+start.onclick=startMic;stop.onclick=stopMic;diagnostic();
+</script>
+</body></html>
